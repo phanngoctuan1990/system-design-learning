@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db_g1:
+    image: redis:6.2-alpine
+    container_name: db_g1
+    command: redis-server
+    ports:
+      - "6379:6379" # Chỉ expose cho debug
+
+  db_g2:
+    image: redis:6.2-alpine
+    container_name: db_g2
+    command: redis-server
+    # Không expose port, chỉ giao tiếp nội bộ qua network
+
+  app_cp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_cp
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=CP
+    ports:
+      - "5002:5000"
+    depends_on:
+      - db_g1
+      - db_g2
+
+  app_ap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_ap
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=AP
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db_g1
+      - db_g2

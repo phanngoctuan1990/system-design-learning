@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  # Database Nodes (G1: Primary, G2: Replica/Partition target)
+  db_g1:
+    image: redis:6.2-alpine
+    container_name: db_g1
+
+  db_g2:
+    image: redis:6.2-alpine
+    container_name: db_g2
+
+  # Application Node A: CP Mode (Consistency Priority)
+  app_cp:
+    build: .
+    container_name: app_cp
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=CP
+    ports:
+      - "5002:5000"
+    depends_on:
+      - db_g1
+      - db_g2
+
+  # Application Node B: AP Mode (Availability/Performance Priority)
+  app_ap:
+    build: .
+    container_name: app_ap
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=AP
+    ports:
+      - "5001:5000"
+    depends_on:
+      - db_g1
+      - db_g2

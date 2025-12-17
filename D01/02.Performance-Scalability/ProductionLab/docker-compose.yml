@@ -1,0 +1,68 @@
+version: '3.8'
+services:
+  app1:
+    build: ./app
+    container_name: app_server_1
+    environment:
+      # Hardcode workers TẠM THỜI để chạy lab, nhưng trong Production nên dùng AutoScaling
+      GUNICORN_WORKERS: 3
+      SERVICE_NAME: APP-1
+    expose:
+      - "8000"
+    # Cấu hình Stability và Isolation (Hardening)
+    deploy:
+      resources:
+        limits:
+          # Giới hạn tài nguyên để mô phỏng môi trường thật
+          cpus: '0.5'
+          memory: '512M'
+    restart: on-failure # Khởi động lại nếu container lỗi (Let-it-crash pattern)
+    healthcheck:
+      # Healthcheck cho Availability
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s # Cho phép thời gian khởi động
+
+  app2:
+    build: ./app
+    container_name: app_server_2
+    environment:
+      GUNICORN_WORKERS: 1
+      SERVICE_NAME: APP-2
+    expose:
+      - "8000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2' # Mô phỏng heterogeneity (tài nguyên yếu hơn)
+          memory: '256M'
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_proxy
+    ports:
+      - "81:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      app1:
+        condition: service_healthy # Chỉ khởi động Nginx khi App1 healthy
+      app2:
+        condition: service_healthy
+    restart: always
+
+  tester:
+    image: alpine/bombardier
+    container_name: traffic_tester
+    command: [ "sleep", "infinity" ]
+    depends_on:
+      - nginx

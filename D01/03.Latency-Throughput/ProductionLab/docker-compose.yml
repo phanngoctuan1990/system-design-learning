@@ -1,0 +1,87 @@
+version: '3.8'
+
+# Định nghĩa Healthcheck cơ bản
+x-healthcheck: &healthcheck_config
+  test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+  interval: 10s
+  timeout: 5s
+  retries: 3
+  start_period: 5s # Cho phép container khởi động trước khi check
+
+services:
+  # SLOW SERVER (50ms) - Vai trò: Primary/Write DB
+  app_slow:
+    build: .
+    container_name: app_slow
+    environment:
+      SERVICE_NAME: SLOW_PRIMARY
+      SIMULATED_DELAY_MS: 50
+    expose:
+      - "5000"
+    healthcheck: *healthcheck_config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5' # Giới hạn CPU (tránh bão hòa/noisy neighbor)
+          memory: 512M # Giới hạn RAM
+
+  # FAST SERVER 1 (5ms) - Vai trò: Read Replica
+  app_fast_1:
+    build: .
+    container_name: app_fast_1
+    environment:
+      SERVICE_NAME: FAST_REPLICA_1
+      SIMULATED_DELAY_MS: 5
+    expose:
+      - "5000"
+    healthcheck: *healthcheck_config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # FAST SERVER 2 (5ms) - Vai trò: Read Replica/Backup
+  app_fast_2:
+    build: .
+    container_name: app_fast_2
+    environment:
+      SERVICE_NAME: FAST_REPLICA_2
+      SIMULATED_DELAY_MS: 5
+    expose:
+      - "5000"
+    healthcheck: *healthcheck_config
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 256M
+
+  # NGINX Load Balancer
+  nginx:
+    image: nginx:latest
+    container_name: nginx_lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    # Đợi cho các app server chuyển sang trạng thái "healthy"
+    depends_on:
+      app_slow:
+        condition: service_healthy
+      app_fast_1:
+        condition: service_healthy
+      app_fast_2:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Traffic Generator (dùng hey/ab/k6)
+  load_tester:
+    image: williamyeh/hey
+    container_name: hey_tester
+    networks:
+      - default
+    command: [ "sleep", "infinity" ]

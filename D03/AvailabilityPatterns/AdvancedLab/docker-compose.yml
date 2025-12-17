@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Load Balancer Nginx
+  nginx-lb:
+    image: nginx:latest
+    container_name: nginx-lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - ha_net
+    depends_on:
+      - app-server-a
+      - app-server-b
+
+  # Application Server A (Node A)
+  app-server-a:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    environment:
+      NODE_NAME: "NODE_A"
+    networks:
+      - ha_net
+
+  # Application Server B (Node B)
+  app-server-b:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    environment:
+      NODE_NAME: "NODE_B"
+    networks:
+      - ha_net
+
+  # Benchmarking Tool k6
+  k6-runner:
+    image: grafana/k6
+    container_name: k6-runner
+    volumes:
+      - ./k6:/scripts
+    networks:
+      - ha_net
+    command: [ "tail", "-f", "/dev/null" ] # Keep container running for manual exec
+
+networks:
+  ha_net:
+    driver: bridge

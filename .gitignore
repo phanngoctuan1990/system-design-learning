@@ -1,0 +1,108 @@
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE and Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Node.js (if any labs use Node)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+*.sql.backup
+*.dump
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+*.env
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Personal Notes (optional - uncomment if you want to keep personal notes private)
+# PERSONAL_NOTES.md
+# notes/
+# scratch/
+
+# Lab-specific artifacts that shouldn't be committed
+**/data/
+**/volumes/
+**/.vagrant/
+
+# Backup files
+*.orig
+*~
+
+# Compiled files
+*.class
+*.o
+*.pyc

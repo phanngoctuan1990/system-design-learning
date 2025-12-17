@@ -1,0 +1,56 @@
+version: '3.8'
+services:
+  # SLOW SERVER (50ms) - Vai trò: Primary/Write DB
+  app_slow:
+    build: .
+    container_name: app_slow
+    environment:
+      SERVICE_NAME: SLOW_PRIMARY
+      SIMULATED_DELAY_MS: 50
+    expose:
+      - "5000"
+    command: python3 app.py
+
+  # FAST SERVER 1 (5ms) - Vai trò: Read Replica
+  app_fast_1:
+    build: .
+    container_name: app_fast_1
+    environment:
+      SERVICE_NAME: FAST_REPLICA_1
+      SIMULATED_DELAY_MS: 5
+    expose:
+      - "5000"
+    command: python3 app.py
+
+  # FAST SERVER 2 (5ms) - Vai trò: Read Replica/Backup
+  app_fast_2:
+    build: .
+    container_name: app_fast_2
+    environment:
+      SERVICE_NAME: FAST_REPLICA_2
+      SIMULATED_DELAY_MS: 5
+    expose:
+      - "5000"
+    command: python3 app.py
+
+  # NGINX Load Balancer
+  nginx:
+    image: nginx:latest
+    container_name: nginx_lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app_slow
+      - app_fast_1
+      - app_fast_2
+
+  # Traffic Generator (Dùng hey để benchmark)
+  load_tester:
+    image: thoeni/hey
+    container_name: hey_tester
+    networks:
+      - default
+    # Không chạy tự động, sẽ được chạy thủ công sau khi các service UP
+    command: [ "sleep", "infinity" ]

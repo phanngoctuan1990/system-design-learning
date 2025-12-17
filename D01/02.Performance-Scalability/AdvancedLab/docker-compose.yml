@@ -1,0 +1,40 @@
+version: '3.8'
+services:
+  app1:
+    build: ./app
+    container_name: app_server_1
+    environment:
+      # Case A: 1 worker; Case B/C: 3 workers (tài nguyên mạnh hơn)
+      GUNICORN_WORKERS: 3
+      SERVICE_NAME: APP-1
+    expose:
+      - "8000"
+
+  app2:
+    build: ./app
+    container_name: app_server_2
+    environment:
+      # Case A: 1 worker; Case B/C: 1 worker (tài nguyên yếu hơn)
+      GUNICORN_WORKERS: 1
+      SERVICE_NAME: APP-2
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_proxy
+    ports:
+      - "81:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app1
+      - app2
+
+  # Traffic tool
+  tester:
+    image: alpine/bombardier
+    container_name: traffic_tester
+    command: [ "sleep", "infinity" ] # Chỉ là container nền, sẽ dùng exec để chạy lệnh
+    depends_on:
+      - nginx

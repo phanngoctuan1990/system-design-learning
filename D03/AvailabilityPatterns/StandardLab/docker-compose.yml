@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db-master:
+    image: postgres:14
+    container_name: db-master
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres/init_master.sh:/docker-entrypoint-initdb.d/init_master.sh
+      - master_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ha_net
+
+  db-slave:
+    image: postgres:14
+    container_name: db-slave
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: appdb
+    depends_on:
+      db-master:
+        condition: service_healthy
+    volumes:
+      - ./postgres/init_slave.sh:/docker-entrypoint-initdb.d/init_slave.sh
+      - slave_data:/var/lib/postgresql/data
+    networks:
+      - ha_net
+    command: [ "postgres", "-c", "hot_standby=on" ] # Enable read-only queries on slave
+
+  client:
+    image: postgres:14 # Sử dụng image Postgres vì nó có sẵn psql client
+    container_name: lab-client
+    depends_on:
+      - db-master
+      - db-slave
+    networks:
+      - ha_net
+    tty: true # Giữ container chạy để ta có thể tương tác
+
+volumes:
+  master_data:
+  slave_data:
+
+
+networks:
+  ha_net:
+    driver: bridge

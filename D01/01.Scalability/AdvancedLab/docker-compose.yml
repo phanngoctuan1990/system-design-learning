@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. Centralized State Store (Cache)
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis_session_cache
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 2. Application Server Clones (Stateless)
+  app_clone_1:
+    build: ./app
+    container_name: app_clone_1
+    environment:
+      # Truyền biến môi trường để app kết nối đúng Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_ID: app_clone_1
+    depends_on:
+      - redis
+    # App chạy trên port 5000
+    expose:
+      - "5000"
+
+  app_clone_2:
+    build: ./app
+    container_name: app_clone_2
+    environment:
+      # Truyền biến môi trường để app kết nối đúng Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SERVER_ID: app_clone_2
+    depends_on:
+      - redis
+    expose:
+      - "5000"
+
+  # 3. Load Balancer
+  nginx:
+    image: nginx:stable-alpine
+    container_name: nginx_lb
+    ports:
+      - "81:80"
+    volumes:
+      - ./nginx_B_least_conn.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app_clone_1
+      - app_clone_2

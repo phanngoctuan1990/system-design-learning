@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # Redis - Session Cache with Persistence
+  # ============================================================
+  redis:
+    image: redis:6-alpine
+    container_name: redis_session_cache
+    ports:
+      - "6379:6379"
+    # SPOF Fix: Persistence với AOF (Append Only File)
+    # --appendonly yes: Ghi mọi lệnh write vào file appendonly.aof
+    # --appendfsync everysec: Sync xuống disk mỗi giây (mất tối đa 1s data nếu crash)
+    command: redis-server --appendonly yes --appendfsync everysec
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # SPOF Fix: Auto-restart khi crash
+    restart: unless-stopped
+
+  # ============================================================
+  # MySQL - User Database
+  # ============================================================
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: app_db
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ============================================================
+  # App Clone 1
+  # ============================================================
+  app_clone_1:
+    build:
+      context: ../../
+      dockerfile: infrastructure/deployment/Dockerfile
+    container_name: app_clone_1
+    environment:
+      REDIS_HOST: redis
+      USE_REDIS: "true"
+      SERVER_ID: "app_clone_1"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+      MYSQL_DATABASE: app_db
+    expose:
+      - "5000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    # SPOF Fix: Auto-restart khi crash
+    restart: unless-stopped
+
+  # ============================================================
+  # App Clone 2
+  # ============================================================
+  app_clone_2:
+    build:
+      context: ../../
+      dockerfile: infrastructure/deployment/Dockerfile
+    container_name: app_clone_2
+    environment:
+      REDIS_HOST: redis
+      USE_REDIS: "true"
+      SERVER_ID: "app_clone_2"
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_USER: app_user
+      MYSQL_PASSWORD: app_password
+      MYSQL_DATABASE: app_db
+    depends_on:
+      redis:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    expose:
+      - "5000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+    # SPOF Fix: Auto-restart khi crash
+    restart: unless-stopped
+
+  # ============================================================
+  # Nginx Load Balancer
+  # ============================================================
+  nginx_lb:
+    image: nginx:stable-alpine
+    container_name: nginx_lb
+    volumes:
+      - ../nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "81:80"
+    depends_on:
+      app_clone_1:
+        condition: service_healthy
+      app_clone_2:
+        condition: service_healthy
+    # SPOF Fix: Healthcheck cho Nginx
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:80/" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    # SPOF Fix: Auto-restart khi crash
+    restart: unless-stopped
+
+# ============================================================
+# Named Volumes - Data persistence
+# ============================================================
+volumes:
+  redis_data:
+    driver: local
+  mysql_data:
+    driver: local

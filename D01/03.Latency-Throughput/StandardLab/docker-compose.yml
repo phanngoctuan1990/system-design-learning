@@ -1,0 +1,46 @@
+version: '3.8'
+services:
+  # Primary App (Latency Cao: 50ms)
+  app_primary:
+    build: .
+    container_name: app_primary
+    environment:
+      SERVICE_NAME: PRIMARY_WRITER
+      SIMULATED_DELAY_MS: 50 # Giả lập I/O chậm
+    expose:
+      - "5000"
+    # FIX: Thêm lệnh khởi động ứng dụng
+    command: python3 app.py
+
+  # Replica App (Latency Thấp: 5ms)
+  app_replica:
+    build: .
+    container_name: app_replica
+    environment:
+      SERVICE_NAME: REPLICA_READER
+      SIMULATED_DELAY_MS: 5 # Giả lập truy cập cache/replica nhanh
+    expose:
+      - "5000"
+    # FIX: Thêm lệnh khởi động ứng dụng
+    command: python3 app.py
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:latest
+    container_name: nginx_lb
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app_primary
+      - app_replica
+
+  # Traffic Generator (Chỉ chạy script kiểm tra)
+  load_generator:
+    build: .
+    container_name: load_generator
+    command: python3 /app/load_test.py
+    # Đảm bảo load_generator chạy sau khi Nginx và các service đã sẵn sàng
+    depends_on:
+      - nginx

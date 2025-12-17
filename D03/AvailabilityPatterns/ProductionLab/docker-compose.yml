@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Load Balancer Nginx
+  nginx-lb:
+    image: nginx:latest
+    container_name: nginx-lb
+    ports:
+      - "8080:80"
+    volumes:
+      # Sử dụng cấu hình Production Hardened
+      - ./nginx/nginx_prod.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - ha_net
+    depends_on:
+      - app-server-a
+      - app-server-b
+
+  # Application Server A & B (Sử dụng Dockerfile Gunicorn mới)
+  app-server-a:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    environment:
+      NODE_NAME: "NODE_A"
+    networks:
+      - ha_net
+    # Áp dụng restart policy production
+    restart: always
+
+  app-server-b:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    environment:
+      NODE_NAME: "NODE_B"
+    networks:
+      - ha_net
+    restart: always
+
+  # Benchmarking Tool k6
+  k6-runner:
+    image: grafana/k6
+    container_name: k6-runner
+    volumes:
+      - ./k6:/home/k6
+    networks:
+      - ha_net
+    tty: true
+
+networks:
+  ha_net:
+    driver: bridge

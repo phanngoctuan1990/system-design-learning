@@ -1,0 +1,160 @@
+version: '3.8'
+
+networks:
+  cap_network:
+    driver: bridge
+
+services:
+  # --- Database Node 1 (Primary) ---
+  db_g1:
+    image: redis:6.2-alpine
+    container_name: db_g1
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    networks:
+      - cap_network
+    volumes:
+      - db_g1_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- Database Node 2 (Replica / Partition Target) ---
+  db_g2:
+    image: redis:6.2-alpine
+    container_name: db_g2
+    command: redis-server --appendonly yes --maxmemory 100mb --maxmemory-policy allkeys-lru
+    networks:
+      - cap_network
+    volumes:
+      - db_g2_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- Application Node CP Mode (Consistency Priority) ---
+  app_cp:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_cp
+    networks:
+      - cap_network
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=CP
+      - NETWORK_TIMEOUT_SEC=0.15
+      - FLASK_RUN_PORT=5000
+      - SECRET_KEY=${SECRET_KEY:-default-secret-change-in-prod}
+      - MAX_STALENESS_MS=500
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "5002:5000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      db_g1:
+        condition: service_healthy
+      db_g2:
+        condition: service_healthy
+
+  # --- Application Node AP Mode (Availability Priority) ---
+  app_ap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app_ap
+    networks:
+      - cap_network
+    environment:
+      - DB_G1_HOST=db_g1
+      - DB_G2_HOST=db_g2
+      - APP_MODE=AP
+      - NETWORK_TIMEOUT_SEC=0.05
+      - FLASK_RUN_PORT=5000
+      - SECRET_KEY=${SECRET_KEY:-default-secret-change-in-prod}
+      - MAX_STALENESS_MS=500
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "5001:5000"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:5000/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    depends_on:
+      db_g1:
+        condition: service_healthy
+      db_g2:
+        condition: service_healthy
+
+volumes:
+  db_g1_data:
+  db_g2_data:
