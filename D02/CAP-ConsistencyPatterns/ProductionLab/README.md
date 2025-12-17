@@ -1,17 +1,17 @@
 # Lab Production-Ready: Hardening System (CAP/Consistency)
 
-## Overview
+## Tổng Quan
 Việc chuyển đổi từ Lab Proof-of-Concept sang mô hình Production-ready yêu cầu sự nghiêm ngặt trong việc quản lý tài nguyên, độ tin cậy của dịch vụ, và khả năng giám sát (Observability). Chúng ta sẽ refactor các thành phần để tối ưu hóa Availability (A) và chuẩn bị cho các kịch bản lỗi thực tế (P).
 
-## I. Application Code Refactoring (`app.py`)
+## I. Refactoring Code Ứng Dụng (`app.py`)
 Chúng ta bổ sung **Structured Logging** và **Graceful Shutdown** cho các dịch vụ ứng dụng. Structured logging là bắt buộc để dễ dàng phân tích log khi xảy ra Partition hoặc Stale Data.
 
-## II. Docker Compose Refactoring (`docker-compose.yml`)
+## II. Refactoring Docker Compose (`docker-compose.yml`)
 Chúng ta thêm **Health Checks** để Docker biết khi nào service thực sự sẵn sàng (duy trì Availability). Chúng ta cũng thiết lập **Resource Limits** và **Restart Policy** để mô phỏng môi trường Production thực tế.
 
-## III. Hướng dẫn Test các Tính năng Nâng cấp (Hardening Verification)
+## III. Hướng Dẫn Test Các Tính Năng Nâng Cấp (Hardening Verification)
 
-### Bước 1: Khởi động và Xác minh Healthcheck
+### Bước 1: Khởi Động và Xác Minh Healthcheck
 
 Khởi động hệ thống:
 ```bash
@@ -24,7 +24,7 @@ docker-compose ps
 ```
 *   **Kỳ vọng:** Tất cả 4 services (`db_g1`, `db_g2`, `app_cp`, `app_ap`) phải có trạng thái **Status: Up (healthy)**. Đây là bằng chứng cho thấy healthcheck đã được cấu hình chính xác và các service phụ thuộc (`depends_on: service_healthy`) đã hoạt động đúng.
 
-### Bước 2: Xác minh Structured Logging
+### Bước 2: Xác Minh Structured Logging
 
 Thực hiện thao tác ghi dữ liệu thành công và kiểm tra định dạng log JSON.
 
@@ -37,7 +37,7 @@ docker logs app_ap | grep REQUEST_COMPLETED
 ```
 *   **Kỳ vọng:** Logs phải là định dạng JSON (Structured Logging). JSON này chứa thông tin latency (ví dụ: `"latency_ms": "1.50"`), giúp bạn dễ dàng nhập vào các công cụ giám sát như ELK Stack hoặc Prometheus/Loki để phân tích SLOs về độ trễ.
 
-### Bước 3: Xác minh Graceful Shutdown và Restart Policy
+### Bước 3: Xác Minh Graceful Shutdown và Restart Policy
 
 Chúng ta sẽ mô phỏng việc orchestrator (ví dụ: Kubernetes) gửi tín hiệu dừng (SIGTERM) tới container `app_cp`.
 
@@ -56,7 +56,7 @@ docker-compose ps
 ```
 *   **Kỳ vọng:** `app_cp` sẽ tự động chuyển sang trạng thái "Restarting" rồi quay lại "Up (healthy)" (do chúng ta cấu hình `restart_policy: on-failure`, và SIGTERM không được coi là failure). Nếu sử dụng SIGKILL, nó sẽ được coi là lỗi và restart.
 
-### Bước 4: Xác minh Circuit Breaker Pattern
+### Bước 4: Xác Minh Circuit Breaker Pattern
 
 **Lệnh 4.1: Kiểm tra trạng thái Circuit Breaker ban đầu**
 ```bash
@@ -90,9 +90,9 @@ docker logs app_ap | grep CIRCUIT_BREAKER
 ```bash
 time curl -X POST http://localhost:5001/write/TEST4/V4
 ```
-*   **Kỳ vọng:** Request trả về ngay lập tức (< 0.1s) thay vì chờ timeout (0.2s), chứng tỏ Circuit Breaker đang block connection attempts.
+*   **Kỳ vọng:** Request trả về ngay lập tức (<0.1s) thay vì chờ timeout (0.2s), chứng tỏ Circuit Breaker đang block connection attempts.
 
-### Bước 5: Xác minh Bounded Staleness
+### Bước 5: Xác Minh Bounded Staleness
 
 **Lệnh 5.1: Khởi động lại G2 và write dữ liệu mới**
 ```bash
@@ -121,7 +121,7 @@ curl http://localhost:5001/read/OLD_DATA
     - `"G1_Staleness_ms": <số lớn hơn 500 nếu đợi lâu>`
     - `"Consistency_Status": "INCONSISTENT/STALE (EXCEEDS_STALENESS_BOUND)"` nếu vượt quá MAX_STALENESS_MS
 
-### Bước 6: Xác minh Read-Your-Writes Consistency
+### Bước 6: Xác Minh Read-Your-Writes Consistency
 
 **Lệnh 6.1: Write dữ liệu trong session**
 ```bash
@@ -145,7 +145,7 @@ curl http://localhost:5001/read/SESSION_DATA
     - `"RYW_Consistent": true` (vì không có write timestamp trong session mới)
     - Nhưng có thể thấy stale data nếu đọc từ replica chậm
 
-### Bước 7: Xác minh Partition và Error Logging (Hardening Consistency)
+### Bước 7: Xác Minh Partition và Error Logging (Hardening Consistency)
 
 Ngắt kết nối G2 để mô phỏng Partition (P).
 ```bash
@@ -168,11 +168,11 @@ curl -X POST http://localhost:5001/write/CONFIG/AP_V1_NEW
 *   **Kiểm tra log WARNING:**
     *   Kỳ vọng: Log `AP_STALE_RISK` với level WARNING xuất hiện, báo hiệu rủi ro dữ liệu không nhất quán (Stale Data) nhưng Availability được duy trì.
 
-## IV. Đề xuất Best Practices để "Hardening" (Hardening Playbook)
+## IV. Đề Xuất Best Practices để "Hardening" (Hardening Playbook)
 
 Để đưa cấu hình CP/AP này lên Production, chúng ta cần bổ sung các cơ chế bảo vệ (Defense Mechanisms) nhằm quản lý các Trade-off C-A một cách có kiểm soát.
 
-### H1. Hardening Consistency (Kiểm soát Eventual Consistency)
+### H1. Hardening Consistency (Kiểm Soát Eventual Consistency)
 
 | Mục tiêu | Best Practice/Cơ chế | Trạng thái | Áp dụng vào Lab | Lý do Chiến lược |
 | :--- | :--- | :--- | :--- | :--- |
@@ -196,7 +196,7 @@ curl -X POST http://localhost:5001/write/CONFIG/AP_V1_NEW
 | **Kiểm soát Hot Keys** | **Load Shedding & Caching** | ❌ **CHƯA THỰC HIỆN** | **Lý do:** Cần thêm Redis/Memcached layer và rate limiting logic. Lab tập trung vào CAP trade-offs, không phải caching strategies. Có thể là lab extension trong tương lai. | Giảm nguy cơ một Key làm tắc nghẽn toàn bộ hệ thống, duy trì hiệu năng tổng thể. |
 | **Tối ưu hóa Chi phí Mạng** | **Async Replication & Geo-locality** | ⚠️ **THỰC HIỆN MỘT PHẦN** | Async replication đã có trong AP mode (best-effort write to G2). **Geo-locality chưa có** - cần multi-region setup với routing logic dựa trên client location. **Lý do:** Multi-region deployment vượt scope của local Docker lab. | Giảm đáng kể Hidden Cost của băng thông mạng liên DC và độ trễ đọc. |
 
-### Tóm tắt Implementation Status
+### Tóm Tắt Implementation Status
 
 | Category | Implemented | Partially Implemented | Not Implemented |
 |----------|-------------|----------------------|-----------------|

@@ -1,51 +1,51 @@
-# Security Policy
+# Chính Sách Bảo Mật
 
-## Supported Versions
+## Phiên Bản Được Hỗ Trợ
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
+| Phiên Bản | Được Hỗ Trợ          |
+| --------- | -------------------- |
+| 1.0.x     | :white_check_mark:   |
 
-## Security Features Implemented
+## Tính Năng Bảo Mật Đã Triển Khai
 
 ### 1. Container Security
-- ✅ Non-root user in Docker containers
+- ✅ Non-root user trong Docker containers
 - ✅ Minimal base image (python:3.9-slim)
-- ✅ No unnecessary packages installed
-- ✅ Read-only filesystem where possible
+- ✅ Không cài đặt packages không cần thiết
+- ✅ Read-only filesystem khi có thể
 
 ### 2. Network Security
 - ✅ Isolated Docker network
-- ✅ No direct database exposure (internal network only)
-- ✅ Health check endpoints don't expose sensitive data
+- ✅ Không expose database trực tiếp (chỉ internal network)
+- ✅ Health check endpoints không expose sensitive data
 
 ### 3. Application Security
-- ✅ Secret key for session management
-- ✅ Input validation on all endpoints
-- ✅ Structured logging (no sensitive data in logs)
-- ✅ Graceful error handling (no stack traces to clients)
+- ✅ Secret key cho session management
+- ✅ Input validation trên tất cả endpoints
+- ✅ Structured logging (không có sensitive data trong logs)
+- ✅ Graceful error handling (không có stack traces cho clients)
 
 ### 4. Data Security
-- ✅ Redis persistence with AOF
+- ✅ Redis persistence với AOF
 - ✅ Data encryption at rest (volume encryption)
-- ⚠️ TLS/SSL not enabled by default (must configure for production)
+- ⚠️ TLS/SSL không được bật mặc định (phải cấu hình cho production)
 
-## Known Limitations
+## Giới Hạn Đã Biết
 
 ### 1. Authentication/Authorization
-**Status:** ❌ Not Implemented
+**Trạng Thái:** ❌ Chưa Triển Khai
 
-**Risk:** Anyone with network access can read/write data
+**Rủi Ro:** Bất kỳ ai có network access đều có thể read/write data
 
-**Mitigation for Production:**
+**Giảm Thiểu Cho Production:**
 ```python
-# Add to app.py
+# Thêm vào app.py
 from flask_httpauth import HTTPBasicAuth
 auth = HTTPBasicAuth()
 
 @auth.verify_password
 def verify_password(username, password):
-    # Implement your auth logic
+    # Triển khai auth logic của bạn
     return check_credentials(username, password)
 
 @app.route('/write/<key>/<value>', methods=['POST'])
@@ -55,35 +55,35 @@ def write_data(key, value):
 ```
 
 ### 2. Rate Limiting
-**Status:** ❌ Not Implemented
+**Trạng Thái:** ❌ Chưa Triển Khai
 
-**Risk:** Vulnerable to DoS attacks
+**Rủi Ro:** Dễ bị tấn công DoS
 
-**Mitigation for Production:**
+**Giảm Thiểu Cho Production:**
 ```bash
-# Use nginx or add Flask-Limiter
+# Sử dụng nginx hoặc thêm Flask-Limiter
 pip install Flask-Limiter
 ```
 
 ### 3. TLS/SSL
-**Status:** ❌ Not Enabled
+**Trạng Thái:** ❌ Chưa Bật
 
-**Risk:** Data transmitted in plaintext
+**Rủi Ro:** Dữ liệu truyền dưới dạng plaintext
 
-**Mitigation for Production:**
+**Giảm Thiểu Cho Production:**
 ```yaml
-# Use reverse proxy (nginx) with SSL
-# Or configure Waitress with SSL
+# Sử dụng reverse proxy (nginx) với SSL
+# Hoặc cấu hình Waitress với SSL
 ```
 
 ### 4. Input Validation
-**Status:** ⚠️ Basic Only
+**Trạng Thái:** ⚠️ Chỉ Basic
 
-**Risk:** Potential injection attacks
+**Rủi Ro:** Tiềm năng injection attacks
 
-**Mitigation for Production:**
+**Giảm Thiểu Cho Production:**
 ```python
-# Add comprehensive validation
+# Thêm comprehensive validation
 from flask import request, abort
 import re
 
@@ -94,47 +94,47 @@ def validate_key(key):
         abort(400, "Key too long")
 ```
 
-## Reporting a Vulnerability
+## Báo Cáo Lỗ Hổng Bảo Mật
 
-If you discover a security vulnerability, please email: security@example.com
+Nếu bạn phát hiện lỗ hổng bảo mật, vui lòng email: security@example.com
 
-**Please do NOT:**
-- Open a public GitHub issue
-- Disclose the vulnerability publicly before it's fixed
+**KHÔNG nên:**
+- Mở public GitHub issue
+- Công khai lỗ hổng trước khi được fix
 
-**Please DO:**
-- Provide detailed description of the vulnerability
-- Include steps to reproduce
-- Suggest a fix if possible
+**NÊN:**
+- Cung cấp mô tả chi tiết về lỗ hổng
+- Bao gồm các bước để tái tạo
+- Đề xuất fix nếu có thể
 
-**Response Time:**
-- Initial response: Within 48 hours
-- Fix timeline: Based on severity (Critical: 7 days, High: 14 days, Medium: 30 days)
+**Thời Gian Phản Hồi:**
+- Phản hồi ban đầu: Trong vòng 48 giờ
+- Timeline fix: Dựa trên mức độ nghiêm trọng (Critical: 7 ngày, High: 14 ngày, Medium: 30 ngày)
 
-## Security Checklist for Production
+## Checklist Bảo Mật Cho Production
 
-### Before Deployment
-- [ ] Change all default credentials
-- [ ] Generate strong SECRET_KEY (32+ characters)
-- [ ] Enable TLS/SSL for all external connections
-- [ ] Implement authentication/authorization
-- [ ] Add rate limiting
-- [ ] Configure firewall rules
-- [ ] Enable audit logging
-- [ ] Scan images for vulnerabilities: `docker scan <image>`
-- [ ] Review and minimize exposed ports
-- [ ] Implement network segmentation
+### Trước Khi Triển Khai
+- [ ] Thay đổi tất cả credentials mặc định
+- [ ] Tạo SECRET_KEY mạnh (32+ ký tự)
+- [ ] Bật TLS/SSL cho tất cả external connections
+- [ ] Triển khai authentication/authorization
+- [ ] Thêm rate limiting
+- [ ] Cấu hình firewall rules
+- [ ] Bật audit logging
+- [ ] Scan images để tìm vulnerabilities: `docker scan <image>`
+- [ ] Xem xét và minimize exposed ports
+- [ ] Triển khai network segmentation
 
-### After Deployment
+### Sau Khi Triển Khai
 - [ ] Monitor security logs
-- [ ] Set up intrusion detection
+- [ ] Thiết lập intrusion detection
 - [ ] Regular security audits
-- [ ] Keep dependencies updated
+- [ ] Giữ dependencies được cập nhật
 - [ ] Backup encryption keys
 - [ ] Test disaster recovery procedures
-- [ ] Review access controls quarterly
+- [ ] Xem xét access controls hàng quý
 
-## Dependency Security
+## Bảo Mật Dependencies
 
 ### Automated Scanning
 ```bash
@@ -147,28 +147,28 @@ docker scan productionlab-app_cp
 docker scan productionlab-app_ap
 ```
 
-### Update Policy
-- Security patches: Apply immediately
-- Minor updates: Monthly review
-- Major updates: Quarterly review with testing
+### Chính Sách Cập Nhật
+- Security patches: Áp dụng ngay lập tức
+- Minor updates: Xem xét hàng tháng
+- Major updates: Xem xét hàng quý với testing
 
-## Incident Response
+## Phản Ứng Sự Cố
 
-### Severity Levels
+### Mức Độ Nghiêm Trọng
 - **Critical:** Data breach, system compromise
 - **High:** Authentication bypass, privilege escalation
 - **Medium:** DoS vulnerability, information disclosure
 - **Low:** Minor configuration issues
 
-### Response Procedures
-1. **Detect:** Monitor logs and alerts
-2. **Contain:** Isolate affected systems
-3. **Investigate:** Determine scope and impact
-4. **Remediate:** Apply fixes and patches
-5. **Recover:** Restore normal operations
-6. **Review:** Post-incident analysis
+### Quy Trình Phản Ứng
+1. **Detect:** Monitor logs và alerts
+2. **Contain:** Cách ly các hệ thống bị ảnh hưởng
+3. **Investigate:** Xác định phạm vi và tác động
+4. **Remediate:** Áp dụng fixes và patches
+5. **Recover:** Khôi phục hoạt động bình thường
+6. **Review:** Phân tích sau sự cố
 
-### Contact Information
+### Thông Tin Liên Hệ
 - Security Team: security@example.com
 - On-call: +1-XXX-XXX-XXXX
 - Escalation: cto@example.com
@@ -176,41 +176,41 @@ docker scan productionlab-app_ap
 ## Compliance
 
 ### Data Protection
-- GDPR compliance considerations
+- Cân nhắc GDPR compliance
 - Data retention policies
-- Right to deletion implementation
-- Data anonymization for logs
+- Triển khai right to deletion
+- Data anonymization cho logs
 
-### Audit Requirements
-- All write operations logged
-- Access logs retained for 90 days
-- Security events logged indefinitely
+### Yêu Cầu Audit
+- Tất cả write operations được log
+- Access logs được giữ trong 90 ngày
+- Security events được log vô thời hạn
 - Regular compliance audits
 
-## Security Best Practices
+## Best Practices Bảo Mật
 
 ### 1. Principle of Least Privilege
-- Containers run as non-root user
-- Database access limited to application only
-- Minimal permissions for all services
+- Containers chạy với non-root user
+- Database access giới hạn chỉ cho application
+- Minimal permissions cho tất cả services
 
 ### 2. Defense in Depth
-- Multiple layers of security
+- Nhiều lớp bảo mật
 - Network isolation
 - Application-level security
 - Data encryption
 
 ### 3. Secure by Default
-- Secure defaults in configuration
-- Explicit opt-in for insecure features
-- Clear warnings for security implications
+- Secure defaults trong configuration
+- Explicit opt-in cho insecure features
+- Cảnh báo rõ ràng về security implications
 
 ### 4. Regular Updates
 - Monthly dependency updates
 - Quarterly security reviews
 - Annual penetration testing
 
-## Additional Resources
+## Tài Nguyên Bổ Sung
 
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Docker Security Best Practices](https://docs.docker.com/engine/security/)

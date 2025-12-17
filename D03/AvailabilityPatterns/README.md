@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="../../assets/images/D03.png" alt="D03: Availability Patterns" width="600"/>
+</div>
+
 Đây là phân tích chuyên sâu về các mẫu hình High Availability (HA) dựa trên các nguồn tài liệu được cung cấp, được trình bày theo phong cách của một kiến trúc sư hệ thống cấp cao, tập trung vào các trade-off và chiến lược triển khai.
 
 ---

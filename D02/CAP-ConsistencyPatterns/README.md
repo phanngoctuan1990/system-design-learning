@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="../../assets/images/D02.png" alt="D02: CAP Theorem & Consistency Patterns" width="600"/>
+</div>
+
 # CAP Theorem & Consistency Patterns: From Theory to Practice
 
 Hiểu về CAP Theorem không chỉ dừng ở lý thuyết suông; đây là vũ khí để bạn đưa ra các quyết định kiến trúc (Architecture Decision Records - ADRs) sắn bén. Trong thế giới phân tán (Distributed Systems), mạng không bao giờ tin cậy được (Partition Tolerance là hiển nhiên). Vì vậy, cuộc chơi thực sự nằm ở việc bạn **chấp nhận hy sinh Consistency (C) hay Availability (A)** khi sự cố xảy ra.

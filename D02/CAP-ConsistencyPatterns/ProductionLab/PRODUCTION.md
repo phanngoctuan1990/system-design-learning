@@ -1,146 +1,146 @@
-# Production Deployment Guide
+# Hướng Dẫn Triển Khai Production
 
-## Pre-deployment Checklist
+## Checklist Trước Khi Triển Khai
 
-### 1. Security
-- [ ] Change `SECRET_KEY` in environment variables
-- [ ] Review and update all default passwords
-- [ ] Enable TLS/SSL for external connections
-- [ ] Configure firewall rules (only expose necessary ports)
-- [ ] Run security scan: `docker scan <image>`
-- [ ] Review non-root user in Dockerfile
+### 1. Bảo Mật
+- [ ] Thay đổi `SECRET_KEY` trong biến môi trường
+- [ ] Xem xét và cập nhật tất cả mật khẩu mặc định
+- [ ] Bật TLS/SSL cho kết nối bên ngoài
+- [ ] Cấu hình firewall rules (chỉ mở các cổng cần thiết)
+- [ ] Chạy quét bảo mật: `docker scan <image>`
+- [ ] Xem xét non-root user trong Dockerfile
 
-### 2. Configuration
-- [ ] Copy `.env.example` to `.env` and update values
-- [ ] Set appropriate `NETWORK_TIMEOUT_SEC` based on network latency
-- [ ] Configure `MAX_STALENESS_MS` based on business requirements
-- [ ] Set `LOG_LEVEL` to `WARNING` or `ERROR` in production
-- [ ] Configure resource limits in docker-compose.yml
+### 2. Cấu Hình
+- [ ] Copy `.env.example` sang `.env` và cập nhật giá trị
+- [ ] Đặt `NETWORK_TIMEOUT_SEC` phù hợp dựa trên độ trễ mạng
+- [ ] Cấu hình `MAX_STALENESS_MS` dựa trên yêu cầu nghiệp vụ
+- [ ] Đặt `LOG_LEVEL` thành `WARNING` hoặc `ERROR` trong production
+- [ ] Cấu hình resource limits trong docker-compose.yml
 
 ### 3. Monitoring & Observability
-- [ ] Set up Prometheus to scrape `/metrics` endpoint
-- [ ] Configure alerting rules for:
-  - Circuit breaker state changes
-  - High staleness (> MAX_STALENESS_MS)
-  - Connection failures
-  - High error rates
-- [ ] Set up log aggregation (ELK, Splunk, CloudWatch)
-- [ ] Configure dashboards for key metrics
+- [ ] Thiết lập Prometheus để scrape endpoint `/metrics`
+- [ ] Cấu hình alerting rules cho:
+  - Thay đổi trạng thái circuit breaker
+  - Staleness cao (> MAX_STALENESS_MS)
+  - Lỗi kết nối
+  - Tỷ lệ lỗi cao
+- [ ] Thiết lập log aggregation (ELK, Splunk, CloudWatch)
+- [ ] Cấu hình dashboards cho các metrics quan trọng
 
-### 4. Data Persistence
-- [ ] Verify volume mounts for Redis data
-- [ ] Set up backup strategy for volumes
-- [ ] Test restore procedures
-- [ ] Configure Redis persistence (AOF enabled)
+### 4. Lưu Trữ Dữ Liệu
+- [ ] Xác minh volume mounts cho dữ liệu Redis
+- [ ] Thiết lập chiến lược backup cho volumes
+- [ ] Test quy trình restore
+- [ ] Cấu hình Redis persistence (AOF enabled)
 
 ### 5. High Availability
-- [ ] Deploy across multiple availability zones
-- [ ] Configure load balancer for app instances
-- [ ] Set up health check monitoring
-- [ ] Test failover scenarios
-- [ ] Document runbooks for common incidents
+- [ ] Triển khai trên nhiều availability zones
+- [ ] Cấu hình load balancer cho app instances
+- [ ] Thiết lập health check monitoring
+- [ ] Test các kịch bản failover
+- [ ] Tài liệu hóa runbooks cho các sự cố thường gặp
 
-## Deployment Steps
+## Các Bước Triển Khai
 
-### Step 1: Prepare Environment
+### Bước 1: Chuẩn Bị Môi Trường
 ```bash
-# Copy and configure environment file
+# Copy và cấu hình file môi trường
 cp .env.example .env
-nano .env  # Update all values
+nano .env  # Cập nhật tất cả giá trị
 
-# Generate secure secret key
+# Tạo secret key an toàn
 python3 -c "import secrets; print(secrets.token_hex(32))"
-# Add to .env: SECRET_KEY=<generated_key>
+# Thêm vào .env: SECRET_KEY=<generated_key>
 ```
 
-### Step 2: Build and Test Locally
+### Bước 2: Build và Test Locally
 ```bash
 # Build images
 docker-compose build
 
-# Run tests
+# Chạy tests
 docker-compose up -d
-./run_tests.sh  # Your test suite
+./run_tests.sh  # Test suite của bạn
 
-# Check logs
+# Kiểm tra logs
 docker-compose logs -f
 
-# Verify metrics endpoint
+# Xác minh metrics endpoint
 curl http://localhost:5001/metrics
 curl http://localhost:5002/metrics
 ```
 
-### Step 3: Deploy to Production
+### Bước 3: Triển Khai lên Production
 ```bash
-# Pull latest code
+# Pull code mới nhất
 git pull origin main
 
-# Build with production tag
+# Build với production tag
 docker-compose -f docker-compose.yml build
 
-# Deploy with zero-downtime
+# Deploy với zero-downtime
 docker-compose up -d --no-deps --build app_cp
 docker-compose up -d --no-deps --build app_ap
 
-# Verify health
+# Xác minh health
 curl http://<production-host>:5001/health
 curl http://<production-host>:5002/health
 ```
 
-### Step 4: Post-Deployment Verification
+### Bước 4: Xác Minh Sau Triển Khai
 ```bash
-# Check all services are healthy
+# Kiểm tra tất cả services healthy
 docker-compose ps
 
-# Monitor logs for errors
+# Monitor logs để tìm lỗi
 docker-compose logs -f --tail=100
 
 # Test write operations
 curl -X POST http://<host>:5001/write/test/value1
 curl -X POST http://<host>:5002/write/test/value2
 
-# Verify metrics collection
+# Xác minh metrics collection
 curl http://<host>:5001/metrics | grep app_requests_total
 ```
 
 ## Monitoring Endpoints
 
-| Endpoint | Purpose | Port |
+| Endpoint | Mục đích | Port |
 |----------|---------|------|
 | `/health` | Health check | 5001, 5002 |
 | `/metrics` | Prometheus metrics | 5001, 5002 |
-| `/circuit-breaker` | Circuit breaker status | 5001, 5002 |
+| `/circuit-breaker` | Trạng thái circuit breaker | 5001, 5002 |
 
-## Key Metrics to Monitor
+## Các Metrics Quan Trọng Cần Monitor
 
 ### Application Metrics
-- `app_requests_total` - Total requests by mode, operation, status
-- `app_request_latency_seconds` - Request latency histogram
-- `circuit_breaker_state` - Circuit breaker state (0=CLOSED, 1=HALF_OPEN, 2=OPEN)
-- `data_staleness_ms` - Data staleness by node
-- `db_connection_failures_total` - Database connection failures
+- `app_requests_total` - Tổng requests theo mode, operation, status
+- `app_request_latency_seconds` - Histogram độ trễ request
+- `circuit_breaker_state` - Trạng thái circuit breaker (0=CLOSED, 1=HALF_OPEN, 2=OPEN)
+- `data_staleness_ms` - Độ cũ dữ liệu theo node
+- `db_connection_failures_total` - Lỗi kết nối database
 
-### Alert Thresholds (Recommended)
-- Circuit breaker OPEN for > 1 minute
-- Staleness > MAX_STALENESS_MS for > 30 seconds
-- Error rate > 5% for > 1 minute
-- P99 latency > 500ms for > 2 minutes
-- Connection failure rate > 10% for > 30 seconds
+### Ngưỡng Cảnh Báo (Khuyến Nghị)
+- Circuit breaker OPEN > 1 phút
+- Staleness > MAX_STALENESS_MS > 30 giây
+- Tỷ lệ lỗi > 5% > 1 phút
+- P99 latency > 500ms > 2 phút
+- Tỷ lệ lỗi kết nối > 10% > 30 giây
 
-## Scaling Considerations
+## Cân Nhắc Về Scaling
 
 ### Horizontal Scaling
 ```bash
 # Scale app instances
 docker-compose up -d --scale app_ap=3 --scale app_cp=3
 
-# Use load balancer (nginx, HAProxy, AWS ALB)
-# Configure session affinity for Read-Your-Writes consistency
+# Sử dụng load balancer (nginx, HAProxy, AWS ALB)
+# Cấu hình session affinity cho Read-Your-Writes consistency
 ```
 
 ### Vertical Scaling
 ```yaml
-# Update resource limits in docker-compose.yml
+# Cập nhật resource limits trong docker-compose.yml
 deploy:
   resources:
     limits:
@@ -151,55 +151,55 @@ deploy:
       memory: 512M
 ```
 
-## Backup and Recovery
+## Backup và Recovery
 
-### Backup Redis Data
+### Backup Dữ Liệu Redis
 ```bash
 # Manual backup
 docker exec db_g1 redis-cli BGSAVE
 docker cp db_g1:/data/dump.rdb ./backups/db_g1_$(date +%Y%m%d).rdb
 
-# Automated backup (add to cron)
+# Automated backup (thêm vào cron)
 0 2 * * * /path/to/backup_script.sh
 ```
 
-### Restore from Backup
+### Restore từ Backup
 ```bash
-# Stop container
+# Dừng container
 docker stop db_g1
 
-# Restore data
+# Restore dữ liệu
 docker cp ./backups/db_g1_20250112.rdb db_g1:/data/dump.rdb
 
-# Start container
+# Khởi động container
 docker start db_g1
 ```
 
 ## Troubleshooting
 
-### High Latency
-1. Check circuit breaker state: `curl http://localhost:5001/circuit-breaker`
-2. Review metrics: `curl http://localhost:5001/metrics | grep latency`
-3. Check network timeout settings
-4. Verify database performance
+### Độ Trễ Cao
+1. Kiểm tra trạng thái circuit breaker: `curl http://localhost:5001/circuit-breaker`
+2. Xem xét metrics: `curl http://localhost:5001/metrics | grep latency`
+3. Kiểm tra cài đặt network timeout
+4. Xác minh hiệu năng database
 
-### Circuit Breaker Stuck OPEN
-1. Check db_g2 health: `docker exec db_g2 redis-cli ping`
-2. Review connection logs: `docker logs app_ap | grep DB_CONNECT_FAILURE`
-3. Verify network connectivity between containers
-4. Restart db_g2 if necessary: `docker restart db_g2`
+### Circuit Breaker Bị Stuck OPEN
+1. Kiểm tra db_g2 health: `docker exec db_g2 redis-cli ping`
+2. Xem xét connection logs: `docker logs app_ap | grep DB_CONNECT_FAILURE`
+3. Xác minh kết nối mạng giữa các containers
+4. Restart db_g2 nếu cần: `docker restart db_g2`
 
-### Data Inconsistency
-1. Check staleness metrics: `curl http://localhost:5001/read/<key>`
-2. Verify replication status
-3. Check for partition events in logs
-4. Review Circuit Breaker events
+### Dữ Liệu Không Nhất Quán
+1. Kiểm tra staleness metrics: `curl http://localhost:5001/read/<key>`
+2. Xác minh trạng thái replication
+3. Kiểm tra partition events trong logs
+4. Xem xét Circuit Breaker events
 
 ## Security Hardening
 
 ### Network Security
 ```yaml
-# Use custom network with encryption
+# Sử dụng custom network với encryption
 networks:
   cap_network:
     driver: overlay
@@ -209,13 +209,13 @@ networks:
 
 ### Secrets Management
 ```bash
-# Use Docker secrets instead of environment variables
+# Sử dụng Docker secrets thay vì environment variables
 echo "my-secret-key" | docker secret create app_secret_key -
 ```
 
 ### Rate Limiting
 ```python
-# Add to app.py
+# Thêm vào app.py
 from flask_limiter import Limiter
 
 limiter = Limiter(
@@ -227,46 +227,46 @@ limiter = Limiter(
 
 ## Performance Tuning
 
-### Redis Optimization
+### Tối Ưu Redis
 ```bash
-# Increase max connections
+# Tăng max connections
 redis-server --maxclients 10000
 
-# Enable pipelining
+# Bật pipelining
 redis-cli --pipe < commands.txt
 
 # Monitor slow queries
 redis-cli SLOWLOG GET 10
 ```
 
-### Application Optimization
-- Enable connection pooling for Redis
+### Tối Ưu Application
+- Bật connection pooling cho Redis
 - Implement caching layer (Redis cache)
-- Use async I/O for non-blocking operations
-- Optimize session storage (use Redis instead of cookies)
+- Sử dụng async I/O cho non-blocking operations
+- Tối ưu session storage (dùng Redis thay vì cookies)
 
-## Compliance and Auditing
+## Compliance và Auditing
 
-### Logging Requirements
-- All write operations logged with timestamp
-- Circuit breaker state changes logged
-- Authentication/authorization events logged
-- Data access patterns logged for audit
+### Yêu Cầu Logging
+- Tất cả write operations được log với timestamp
+- Thay đổi trạng thái circuit breaker được log
+- Authentication/authorization events được log
+- Data access patterns được log để audit
 
 ### Data Retention
-- Configure log rotation: max 10MB per file, keep 3 files
-- Archive logs to S3/GCS for long-term storage
-- Implement log anonymization for PII data
+- Cấu hình log rotation: max 10MB per file, giữ 3 files
+- Archive logs sang S3/GCS để lưu trữ lâu dài
+- Implement log anonymization cho PII data
 
 ## Disaster Recovery
 
 ### RTO/RPO Targets
-- Recovery Time Objective (RTO): < 15 minutes
-- Recovery Point Objective (RPO): < 5 minutes
+- Recovery Time Objective (RTO): < 15 phút
+- Recovery Point Objective (RPO): < 5 phút
 
-### DR Procedures
-1. Maintain standby environment in different region
-2. Replicate data asynchronously to DR site
-3. Test failover quarterly
-4. Document runbooks for all scenarios
-5. Train team on DR procedures
+### Quy Trình DR
+1. Duy trì standby environment ở region khác
+2. Replicate dữ liệu async sang DR site
+3. Test failover hàng quý
+4. Tài liệu hóa runbooks cho tất cả kịch bản
+5. Đào tạo team về quy trình DR

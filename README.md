@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="./assets/images/logo.png" alt="System Design Learning Logo" width="200"/>
+</div>
+
 # Học Thiết Kế Hệ Thống (System Design Learning)
 
 > Tài liệu học tập toàn diện về các khái niệm thiết kế hệ thống, lấy cảm hứng từ [system-design-primer](https://github.com/donnemartin/system-design-primer)
