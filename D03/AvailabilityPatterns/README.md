@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../assets/images/D03.png" alt="D03: Availability Patterns" width="600"/>
+  <img src="../../assets/images/D03.png" alt="D03: Availability Patterns"/>
 </div>
 
 Đây là phân tích chuyên sâu về các mẫu hình High Availability (HA) dựa trên các nguồn tài liệu được cung cấp, được trình bày theo phong cách của một kiến trúc sư hệ thống cấp cao, tập trung vào các trade-off và chiến lược triển khai.
@@ -84,21 +84,26 @@ Việc duy trì tính sẵn sàng đòi hỏi phải có khả năng quan sát (
 Đây là ước lượng cấp tốc cho hệ thống Coffee App (10k RPS, 5KB Payload) dựa trên nguyên tắc tính toán dung lượng cơ bản, cần được đưa vào NotebookLM để bắt đầu Capacity Planning.
 
 #### Dữ liệu đầu vào:
-*   RPS (Request Per Second): $R = 10,000$
-*   Payload Size (trung bình): $P = 5 \text{ KB}$
-*   Tỷ lệ đọc/ghi giả định: 90% Đọc / 10% Ghi.
-*   Cache Hit Ratio (CHR) giả định: 90%.
+*   RPS (Request Per Second): R = 10,000
+*   Payload Size (trung bình): P = 5 KB
+*   Tỷ lệ đọc/ghi giả định: 90% Đọc / 10% Ghi
+*   Cache Hit Ratio (CHR) giả định: 90%
 
 #### A. Bandwidth (Yêu cầu Mạng)
 
 Chúng ta cần tính toán tổng lưu lượng ra/vào (In/Out) tại Load Balancer.
 
 1.  **Tính toán Lưu lượng Dữ liệu (Bytes/giây):**
-    $$\text{Traffic (B/s)} = R \times P \times 2 \text{ (In/Out)}$$
-    $$ = 10,000 \text{ RPS} \times 5 \text{ KB/req} \times 2$$
-    $$ = 100,000 \text{ KB/s} = 100 \text{ MB/s}$$
+    ```
+    Traffic (B/s) = R × P × 2 (In/Out)
+                  = 10,000 RPS × 5 KB/req × 2
+                  = 100,000 KB/s = 100 MB/s
+    ```
+
 2.  **Chuyển đổi sang Bit/giây (Tốc độ mạng):**
-    $$100 \text{ MB/s} \times 8 \text{ bits/byte} = 800 \text{ Mbps} \approx 0.8 \text{ Gbps}$$
+    ```
+    100 MB/s × 8 bits/byte = 800 Mbps ≈ 0.8 Gbps
+    ```
 
 > **Kết luận Baseline Bandwidth:** Yêu cầu tối thiểu là **1 Gbps** (Gigabit Ethernet) để xử lý tải trung bình. Tuy nhiên, khuyến nghị kiến trúc sư hệ thống nên sử dụng **10 Gbps** để đảm bảo khả năng chịu tải đỉnh (burst traffic) và khả năng mở rộng trong tương lai.
 
@@ -107,10 +112,15 @@ Chúng ta cần tính toán tổng lưu lượng ra/vào (In/Out) tại Load Bal
 Chủ yếu tập trung vào dữ liệu ghi mới (Write Load).
 
 1.  **Tính toán Tải ghi (Writes/giây):**
-    $$\text{Writes/s} = 10,000 \text{ RPS} \times 10\% = 1,000 \text{ Writes/s}$$
+    ```
+    Writes/s = 10,000 RPS × 10% = 1,000 Writes/s
+    ```
+
 2.  **Tính toán Dung lượng Ghi/ngày:**
-    $$\text{Storage/day} = 1,000 \text{ Writes/s} \times 5 \text{ KB/write} \times 86,400 \text{ giây/ngày}$$
-    $$ \approx 432,000,000 \text{ KB/ngày} \approx 432 \text{ GB/ngày}$$
+    ```
+    Storage/day = 1,000 Writes/s × 5 KB/write × 86,400 giây/ngày
+                ≈ 432,000,000 KB/ngày ≈ 432 GB/ngày
+    ```
 
 > **Kết luận Baseline Storage:** Hệ thống Database cần có khả năng xử lý tốc độ ghi **432 GB/ngày** trên các node Master. Việc này đòi hỏi ổ cứng SSD hiệu suất cao (High-IOPS SSD) và chiến lược sao lưu/lưu trữ dài hạn (archiving).
 
@@ -119,13 +129,21 @@ Chủ yếu tập trung vào dữ liệu ghi mới (Write Load).
 Đây là tải thực sự đánh vào Database sau khi cache đã lọc.
 
 1.  **Tải Đọc (Read Load) lên DB:**
-    $$\text{Read QPS to DB} = \text{Total Read RPS} \times (1 - CHR)$$
-    $$ = (10,000 \text{ RPS} \times 90\%) \times (1 - 0.90)$$
-    $$ = 9,000 \times 0.10 = 900 \text{ QPS}$$
+    ```
+    Read QPS to DB = Total Read RPS × (1 - CHR)
+                   = (10,000 RPS × 90%) × (1 - 0.90)
+                   = 9,000 × 0.10 = 900 QPS
+    ```
+
 2.  **Tải Ghi (Write Load) lên DB:**
-    $$ = 1,000 \text{ QPS}$$
+    ```
+    Write QPS = 1,000 QPS
+    ```
+
 3.  **Total QPS Internal Load:**
-    $$ = 900 (\text{Read}) + 1,000 (\text{Write}) = 1,900 \text{ QPS}$$
+    ```
+    Total QPS = 900 (Read) + 1,000 (Write) = 1,900 QPS
+    ```
 
 > **Kết luận Baseline QPS:** Master Database (trong Active-Passive) hoặc tổng các Master (trong Active-Active) cần xử lý tối thiểu **1,900 QPS** liên tục.
 
@@ -134,7 +152,9 @@ Chủ yếu tập trung vào dữ liệu ghi mới (Write Load).
 Giả sử chúng ta cần cache working set trong khoảng thời gian 30 phút cao điểm để đạt được 90% CHR.
 
 1.  **Tính toán Dữ liệu trong 30 phút:**
-    $$\text{Cache Memory} = 10,000 \text{ RPS} \times 5 \text{ KB/req} \times 30 \text{ phút} \times 60 \text{ giây/phút}$$
-    $$ = 90,000,000 \text{ KB} \approx 90 \text{ GB}$$
+    ```
+    Cache Memory = 10,000 RPS × 5 KB/req × 30 phút × 60 giây/phút
+                 = 90,000,000 KB ≈ 90 GB
+    ```
 
 > **Kết luận Baseline Cache Memory:** Yêu cầu tối thiểu là **100 GB RAM** cho hệ thống Cache phân tán (ví dụ: Redis cluster). Nếu triển khai Active-Active, bộ nhớ cache này có thể được nhân đôi và phân tán giữa các node để tăng tính sẵn sàng và khả năng chịu tải.

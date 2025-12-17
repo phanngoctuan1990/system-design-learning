@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../assets/images/D01.png" alt="D01: Foundational Concepts" width="600"/>
+  <img src="../assets/images/D01.png" alt="D01: Foundational Concepts"/>
 </div>
 
 # D01: Các Khái Niệm Nền Tảng

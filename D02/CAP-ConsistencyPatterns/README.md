@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../assets/images/D02.png" alt="D02: CAP Theorem & Consistency Patterns" width="600"/>
+  <img src="../../assets/images/D02.png" alt="D02: CAP Theorem & Consistency Patterns"/>
 </div>
 
 # CAP Theorem & Consistency Patterns: From Theory to Practice

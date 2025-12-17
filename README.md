@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/images/logo.png" alt="System Design Learning Logo" width="200"/>
+  <img src="./assets/images/logo.png" alt="System Design Learning Logo"/>
 </div>
 
 # Học Thiết Kế Hệ Thống (System Design Learning)

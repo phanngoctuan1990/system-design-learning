@@ -63,13 +63,19 @@ Chúng ta sẽ đi qua 3 level: **Junior, Mid, và Senior**.
 <summary><b>💡 Gợi ý trả lời (Click để xem)</b></summary>
 
 1.  **The Math of Serial Availability:**
-    *   Công thức: $A_{total} = A_1 \times A_2 \times ... \times A_n$
-    *   Tính toán: $0.999^5 \approx 0.995$ (99.5%)
-    *   **Insight:** Càng microservices nối tiếp, hệ thống càng dễ chết. 99.5% là thảm họa so với mục tiêu 99.99%.
+    - Công thức: `A_total = A1 × A2 × ... × An`
+    - Tính toán:
+      ```
+      0.999^5 ≈ 0.995 (99.5%)
+      ```
+    - **Insight:** Càng microservices nối tiếp, hệ thống càng dễ chết. 99.5% là thảm họa so với mục tiêu 99.99%.
 
 2.  **Strategic Solution (Parallelism):**
-    *   Không thể bắt mỗi team dev nâng code lên 99.999% ngay lập tức. Cách duy nhất là **Redundancy (Parallelism)**.
-    *   Triển khai **Read Replicas** hoặc **Caching Layer** song song cho các service chịu tải đọc cao.
-    *   Công thức song song: $A = 1 - (1 - 0.999)^2 \approx 99.9999\%$.
-    *   **Chiến thuật:** Tách Read/Write path. Sharding database để cách ly lỗi (Blast Radius reduction). Active-Active cho các stateless services.
+    - Không thể bắt mỗi team dev nâng code lên 99.999% ngay lập tức. Cách duy nhất là **Redundancy (Parallelism)**.
+    - Triển khai **Read Replicas** hoặc **Caching Layer** song song cho các service chịu tải đọc cao.
+    - Công thức song song:
+      ```
+      A = 1 - (1 - 0.999)^2 ≈ 99.9999%
+      ```
+    - **Chiến thuật:** Tách Read/Write path. Sharding database để cách ly lỗi (Blast Radius reduction). Active-Active cho các stateless services.
 </details>
