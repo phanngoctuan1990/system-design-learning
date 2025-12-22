@@ -12,8 +12,14 @@ done
 echo "Setting up Master configuration..."
 
 # 1. Kích hoạt Replication và tạo user replication
+# Chỉ định level log để replication
+# Số lượng connection replication
+# Cho phép Slave kết nối
+# Tạo user replication
+# Tạo table
+# Insert record
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
-    ALTER SYSTEM SET wal_level = replica;
+    ALTER SYSTEM SET wal_level = replica; 
     ALTER SYSTEM SET max_wal_senders = 10;
     ALTER SYSTEM SET listen_addresses = '*';
     CREATE USER repl_user WITH REPLICATION ENCRYPTED PASSWORD 'repl_password';
